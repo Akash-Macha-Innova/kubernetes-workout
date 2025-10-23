@@ -1,0 +1,59 @@
+# Deployment & Service in 1 file (because they belong together)
+# All the deplyments needs services
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  labels:
+    app: webapp
+spec:
+  replicas: 1 # How many PODs you wanna create?
+  selector:
+    # All the PODs, that match with this app label, belongs to this deployment!
+    matchLabels:
+      app: webapp
+  # This configures the POD with in a deployment!
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      # A POD can contain multiple pods, thus a list/array!
+      containers:
+      - name: webapp
+        image: nanajanashia/k8s-demo-app:v1.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: USER_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-config
+              key: mongo-url
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+spec:
+  type: NodePort
+  selector:
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      # Doc: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+      nodePort: 30100

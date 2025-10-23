@@ -1,0 +1,51 @@
+# Deployment & Service in 1 file (because they belong together)
+# All the deplyments needs services
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+  labels:
+    app: mongo
+spec:
+  replicas: 1 # How many PODs you wanna create?
+  selector:
+    # All the PODs, that match with this app label, belongs to this deployment!
+    matchLabels:
+      app: mongo
+  # This configures the POD with in a deployment!
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      # A POD can contain multiple pods, thus a list/array!
+      containers:
+      - name: mongodb
+        image: mongo:5.0
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    app: mongo
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
